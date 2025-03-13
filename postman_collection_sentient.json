@@ -1,0 +1,21 @@
+{
+    "info": {
+      "name": "SentientRolodex API",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {"name": "Home", "request": {"method": "GET", "url": "{{base_url}}/"}},
+      {"name": "User Registration", "request": {"method": "POST", "url": "{{base_url}}/registration"}},
+      {"name": "Sign In", "request": {"method": "POST", "url": "{{base_url}}/sign-in"}},
+      {"name": "Get User", "request": {"method": "GET", "url": "{{base_url}}/user/:user_id"}},
+      {"name": "Create Contact Space", "request": {"method": "POST", "url": "{{base_url}}/contacts/create-space"}},
+      {"name": "Upload Contacts", "request": {"method": "POST", "url": "{{base_url}}/contacts/add_contacts"}},
+      {"name": "Get Contact", "request": {"method": "GET", "url": "{{base_url}}/contacts/:contact_id"}},
+      {"name": "Get Contacts Under Space", "request": {"method": "GET", "url": "{{base_url}}/contacts/:contact_space_id"}},
+      {"name": "Update Contact Space", "request": {"method": "PUT", "url": "{{base_url}}/contacts/update/:contact_space_id"}},
+      {"name": "Override Contact Metadata", "request": {"method": "PUT", "url": "{{base_url}}/contacts/override/:contact_id"}},
+      {"name": "Delete Contact", "request": {"method": "DELETE", "url": "{{base_url}}/contacts/:contact_id"}},
+      {"name": "Initiate Agent", "request": {"method": "GET", "url": "{{base_url}}/agents/:contact_id"}},
+      {"name": "Agent Status", "request": {"method": "GET", "url": "{{base_url}}/agents/:agent_id"}}
+    ]
+  }
