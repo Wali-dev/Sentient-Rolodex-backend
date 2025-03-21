@@ -1,3 +1,8 @@
 fastapi
 pydantic
 uvicorn
+pymongo
+passlib
+google-genai
+pdfplumber
+google.generativeai
