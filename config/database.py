@@ -1,17 +1,25 @@
 from pymongo import MongoClient
 import os
 from dotenv import load_dotenv
+
+# Load environment variables
 load_dotenv()
-# MongoDB Connection URL (Change it as per your setup)
-MONGO_URI = os.getenv("DATABASE_URI")  # Default local MongoDB URL
 
-# Create a connection
-client = MongoClient(MONGO_URI)
+# MongoDB Connection URL from environment variables
+MONGO_URI = os.getenv("DATABASE_URI")
 
-# Select Database
-db = client["hackathon"]  # Replace 'my_database' with your actual DB name
-
-# Select Collection
-users_collection = db["users"]
-contract_spaces=db["contractSpace"]
-contracts=db["contracts"]
+try:
+    # Create a connection
+    client = MongoClient(MONGO_URI)
+    
+    # Select Database
+    db = client["hackathon"]
+    
+    # Select Collections
+    users_collection = db["users"]
+    contract_spaces_collection = db["contract_spaces"]  # Fixed variable name
+    contracts_collection = db["contracts"]  # Fixed variable name
+except Exception as e:
+    print(f"Database connection error: {str(e)}")
+    # Re-raise to ensure app doesn't start with broken DB connection
+    raise

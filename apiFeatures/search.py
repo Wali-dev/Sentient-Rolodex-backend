@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# MongoDB connection setup
 MONGO_URI = os.getenv("DATABASE_URI")
 client = AsyncIOMotorClient(MONGO_URI)
 db = client["hackathon"]
@@ -17,13 +18,18 @@ async def search_contract_spaces(keyword: str):
     :param keyword: The search term to match contract space names or contracts.
     :return: List of matching contract spaces.
     """
-    search_results = await contract_spaces_collection.find(
-        {
-            "$or": [
-                {"name": {"$regex": keyword, "$options": "i"}},  # Case-insensitive search in name
-                {"contracts": {"$regex": keyword, "$options": "i"}}  # Case-insensitive search in contracts list
-            ]
-        }
-    ).to_list(length=10)  # Limit results
-
-    return search_results
+    try:
+        search_results = await contract_spaces_collection.find(
+            {
+                "$or": [
+                    {"name": {"$regex": keyword, "$options": "i"}},  # Case-insensitive search in name
+                    {"contracts": {"$regex": keyword, "$options": "i"}}  # Case-insensitive search in contracts list
+                ]
+            }
+        ).to_list(length=10)  # Limit results to 10
+        
+        return search_results
+    except Exception as e:
+        # Log the error and return empty list
+        print(f"Search error: {str(e)}")
+        return []

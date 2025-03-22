@@ -1,21 +1,42 @@
-from typing import Union
+from fastapi import APIRouter, Response
+from ..controller.authController import read_root, user_registration, user_signin, user_signout
+from ..models.Model import UserModel, LoginModel
 
-from fastapi import APIRouter,Response
-from ..controller.authController import read_root,user_registration,user_signin
-from ..models.Model import UserModel,LoginModel
-
-auth=APIRouter()
-
+# Create auth router
+auth = APIRouter()
 
 @auth.get("/")
-async def func1():
+async def auth_root():
+    """Root endpoint for auth API"""
     return await read_root()
 
 @auth.post("/registration")
-async def func2(user: UserModel):
+async def register_user(user: UserModel):
+    """
+    Register a new user
+    
+    :param user: User registration data
+    :return: Registration result
+    """
     return await user_registration(user)
 
 @auth.post("/sign-in")
-async def func3(response: Response, user: LoginModel):
-    return  await user_signin(response,user)
+async def signin_user(response: Response, user: LoginModel):
+    """
+    Sign in a user
+    
+    :param response: FastAPI response object
+    :param user: User login credentials
+    :return: Login result
+    """
+    return await user_signin(response, user)
 
+@auth.post("/sign-out")
+async def signout_user(response: Response):
+    """
+    Sign out a user
+    
+    :param response: FastAPI response object
+    :return: Logout result
+    """
+    return await user_signout(response)

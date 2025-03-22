@@ -1,28 +1,76 @@
-from typing import Union
-from fastapi import  APIRouter, UploadFile, File,Request
-from ..controller.contractController import get_contact_parsed_metadata_under_a_particular_space,create_contact_space,upload_contacts,update_contact
-from ..models.Model import contractSpaceModel
-contractParse = APIRouter()
+from fastapi import APIRouter, UploadFile, File, Request
+from ..controller.contractController import (
+    get_contracts_by_space_id,
+    create_contract_space,
+    upload_contracts,
+    update_contract_space,
+    update_contract_metadata,
+    delete_contract
+)
+from ..models.Model import contractSpaceModel  # Fixed class name and added missing import
 
-@contractParse.post("/contacts/create-space")
-async def func2(details:contractSpaceModel,request:Request):
-    return await create_contact_space(details,request)
+# Create contract router
+contract_router = APIRouter()  # Fixed variable name
 
-@contractParse.post("/contacts/add_contacts")
-async def func3(file: UploadFile = File(...)):
-    return await upload_contacts(file)
+@contract_router.post("/contracts/create-space")
+async def create_space(details: contractSpaceModel, request: Request):
+    """
+    Create a new contract space
+    
+    :param details: Contract space details
+    :param request: FastAPI request object
+    :return: Creation result
+    """
+    return await create_contract_space(details, request)
 
-@contractParse.get("/contacts/{contact_space_id}")
-async def func4():
-    return await get_contact_parsed_metadata_under_a_particular_space()
-@contractParse.put("/contacts/update/{contact_space_id}")
-async def func5():
-    return await update_contact()
+@contract_router.post("/contracts/add_contracts")
+async def add_contracts(file: UploadFile = File(...)):
+    """
+    Upload and process a contract file
+    
+    :param file: Uploaded contract PDF
+    :return: Processing result
+    """
+    return await upload_contracts(file)
 
-@contractParse.put("/contacts/override/{contact_id}")
-async def func6():
-    return await update_contact()
+@contract_router.get("/contracts/{space_id}")
+async def get_contracts(space_id: str):
+    """
+    Get contracts under a particular space
+    
+    :param space_id: Contract space ID
+    :return: List of contracts
+    """
+    return await get_contracts_by_space_id(space_id)
 
-@contractParse.delete("/contacts/{contact_id}")
-async def func7():
-    return await update_contact()
+@contract_router.put("/contracts/update/{space_id}")
+async def update_space(space_id: str, details: dict):
+    """
+    Update a contract space
+    
+    :param space_id: Contract space ID
+    :param details: Updated details
+    :return: Update result
+    """
+    return await update_contract_space(space_id, details)
+
+@contract_router.put("/contracts/override/{contract_id}")
+async def override_contract(contract_id: str, metadata: dict):
+    """
+    Override a contract's metadata
+    
+    :param contract_id: Contract ID
+    :param metadata: Updated metadata
+    :return: Update result
+    """
+    return await update_contract_metadata(contract_id, metadata)
+
+@contract_router.delete("/contracts/{contract_id}")
+async def remove_contract(contract_id: str):
+    """
+    Delete a contract
+    
+    :param contract_id: Contract ID
+    :return: Delete result
+    """
+    return await delete_contract(contract_id)

@@ -3,9 +3,10 @@ pydantic
 uvicorn
 pymongo
 passlib
-google-genai
+python-dotenv
 pdfplumber
-google.generativeai
+google-generativeai
 PyJWT
 motor
-bycript
+bcrypt
+python-multipart
