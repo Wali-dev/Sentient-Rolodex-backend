@@ -1,16 +1,15 @@
 from typing import Union
 
-from fastapi import FastAPI,APIRouter,Response
-from ..controller.authController import read_root,user_registration,user_signin,user_signout
+from fastapi import APIRouter,Response
+from ..controller.authController import read_root,user_registration,user_signin
 from ..models.Model import UserModel,LoginModel
 
 auth=APIRouter()
 
 
-
 @auth.get("/")
 async def func1():
-     return await read_root()
+    return await read_root()
 
 @auth.post("/registration")
 async def func2(user: UserModel):
@@ -20,6 +19,3 @@ async def func2(user: UserModel):
 async def func3(response: Response, user: LoginModel):
     return  await user_signin(response,user)
 
-@auth.post("/sign-out")
-async def func4(response: Response):
-    return await user_signout(response)

@@ -6,3 +6,6 @@ passlib
 google-genai
 pdfplumber
 google.generativeai
+PyJWT
+motor
+bycript

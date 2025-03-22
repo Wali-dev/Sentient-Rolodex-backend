@@ -13,3 +13,8 @@ class LoginModel(BaseModel):
 class contractSpaceModel(BaseModel):
     name:str
     contracts:List[str]=[]
+
+
+class contactMetadataModel(BaseModel):
+    id: str
+    

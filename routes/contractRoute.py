@@ -8,7 +8,6 @@ contractParse = APIRouter()
 async def func2(details:contractSpaceModel,request:Request):
     return await create_contact_space(details,request)
 
-
 @contractParse.post("/contacts/add_contacts")
 async def func3(file: UploadFile = File(...)):
     return await upload_contacts(file)
