@@ -26,6 +26,7 @@ class ContractMetadataModel(BaseModel):
     expiration_date: Optional[str] = None
     terms: Optional[List[dict]] = None
     status: Optional[str] = None
+    plartform: str
     
 class AgentStatusModel(BaseModel):
     """Agent status model"""

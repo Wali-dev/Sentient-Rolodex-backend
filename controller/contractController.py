@@ -5,6 +5,7 @@ import pdfplumber
 import shutil
 import os
 from dotenv import load_dotenv
+from bson import ObjectId
 import asyncio
 import google.generativeai as genai
 from ..config.database import contract_spaces_collection, users_collection, contracts_collection  # Fixed variable names
@@ -55,10 +56,12 @@ def process_with_gemini(text):
         return f"Error processing with Gemini: {str(e)}"
 
 
-async def upload_contracts(file: UploadFile = File(...)):
+
+async def upload_contracts(contract_space_id: str, file: UploadFile = File(...)):
     """
     Uploads a contract PDF file and processes it with Gemini
     
+    :param contract_space_id: ID of the contract space to add the contract to
     :param file: Uploaded PDF file
     :return: Processed contract data
     """
@@ -79,16 +82,69 @@ async def upload_contracts(file: UploadFile = File(...)):
         # Process text with Gemini API
         gemini_response = process_with_gemini(extracted_text)
         
-        # TODO: Parse response and store in database
-        # contract_data = json.loads(gemini_response)
-        # new_contract = await contracts_collection.insert_one(contract_data)
+        # Create dummy contract data
+        dummy_contract = {
+            "id": "contract_12345",
+            "title": "Service Agreement",
+            "parties": ["Company A", "Company B"],
+            "effective_date": "2025-01-01",
+            "expiration_date": "2026-01-01",
+            "terms": [
+                {
+                    "clause": "Payment Terms",
+                    "description": "Payment must be made within 30 days of invoice."
+                },
+                {
+                    "clause": "Confidentiality",
+                    "description": "Both parties agree to keep all shared information confidential."
+                }
+            ],
+            "status": "Active",
+            "plartform": "www.youtube.com"
+        }
+        
+        # Convert to ContractMetadataModel instance and then to dict for DB storage
+        from ..models.Model import ContractMetadataModel
+        from bson import ObjectId
+        
+        contract_model = ContractMetadataModel(**dummy_contract)
+        
+        # Save to database
+        contract_dict = contract_model.dict()
+        new_contract = contracts_collection.insert_one(contract_dict)
+        contract_id = str(new_contract.inserted_id)
+        
+        # Print for debugging
+        print(f"Contract ID: {contract_id}")
+        print(f"Contract Space ID: {contract_space_id}")
+        
+        # Convert string ID to ObjectId for MongoDB query
+        try:
+            space_id = ObjectId(contract_space_id)
+        except:
+            space_id = contract_space_id  # Keep as string if it's not a valid ObjectId
+        
+        # Update the contract space to include this contract
+        update_result = contract_spaces_collection.update_one(
+            {"_id": space_id},
+            {"$push": {"contracts": contract_id}}
+        )
+        
+        print(f"Update result: {update_result.modified_count} document(s) modified")
         
         # Clean up temp file after processing
         if os.path.exists(temp_file_path):
             os.unlink(temp_file_path)
         
-        print(extracted_text)
-        return {"gemini_response": gemini_response}
+        return {
+            "message": "Contract uploaded successfully",
+            "contract_id": contract_id,
+            "contract_space_id": contract_space_id,
+            "update_result": {
+                "acknowledged": update_result.acknowledged,
+                "modified_count": update_result.modified_count
+            }
+        }
         
     except Exception as e:
         # Ensure file cleanup in case of error
@@ -97,6 +153,7 @@ async def upload_contracts(file: UploadFile = File(...)):
                 os.unlink(temp_file_path)
             except:
                 pass  # Ignore errors during cleanup
+        print(f"Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     
 async def create_contract_space(details: contractSpaceModel, request: Request):

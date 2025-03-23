@@ -23,15 +23,15 @@ async def create_space(details: contractSpaceModel, request: Request):
     """
     return await create_contract_space(details, request)
 
-@contract_router.post("/contracts/add_contracts")
-async def add_contracts(file: UploadFile = File(...)):
+@contract_router.post("/contracts/add_contracts/{contract_space_id}")
+async def add_contracts(contract_space_id: str, file: UploadFile = File(...)):
     """
     Upload and process a contract file
     
     :param file: Uploaded contract PDF
     :return: Processing result
     """
-    return await upload_contracts(file)
+    return await upload_contracts(contract_space_id, file)
 
 @contract_router.get("/contracts/{space_id}")
 async def get_contracts(space_id: str):
