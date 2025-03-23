@@ -7,6 +7,11 @@ import datetime
 from ..config.database import users_collection
 from ..models.Model import UserModel, LoginModel
 
+from fastapi import Request
+from ..middleware.authMiddleware import verify_access_token
+from bson import ObjectId
+from ..config.database import contract_spaces_collection, contracts_collection
+
 # Load environment variables
 load_dotenv()
 
@@ -110,3 +115,84 @@ async def user_signout(response: Response):
     """
     response.delete_cookie("access_token")
     return {"message": "Logged out successfully"}
+
+
+async def get_user_details(request: Request):
+    """
+    Get authenticated user details including all contract spaces and their contracts
+    
+    :param request: FastAPI request object with access token
+    :return: Aggregated user data with contract spaces and contracts
+    """
+    try:
+        # Verify user authentication using access token
+        user = await verify_access_token(request)
+        if not user:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        
+        # Create user info dict without sensitive data
+        user_info = {
+            "user_id": str(user["_id"]),
+            "email": user["email"],
+            "contract_spaces": []
+        }
+        
+        print(user_info)
+        # Get all contract spaces for this user
+        contract_space_ids = user.get("contractSpace", [])
+        
+        # Fetch each contract space and its contracts
+        for space_id in contract_space_ids:
+            try:
+                # Convert string ID to ObjectId if needed
+                space_obj_id = ObjectId(space_id) if not isinstance(space_id, ObjectId) else space_id
+                
+                # Find the contract space
+                space =  contract_spaces_collection.find_one({"_id": space_obj_id})
+                
+                if space:
+                    # Create contract space info without _id field
+                    space_info = {
+                        "space_id": str(space["_id"]),
+                        "name": space["name"],
+                        "contracts": []
+                    }
+                    
+                    # Get all contracts for this space
+                    contract_ids = space.get("contracts", [])
+                    
+                    # Fetch each contract
+                    for contract_id in contract_ids:
+                        try:
+                            # Convert string ID to ObjectId if needed
+                            contract_obj_id = ObjectId(contract_id) if not isinstance(contract_id, ObjectId) else contract_id
+                            
+                            # Find the contract
+                            contract =  contracts_collection.find_one({"_id": contract_obj_id})
+                            
+                            if contract:
+                                # Create contract info
+                                contract_info = {
+                                    "contract_id": str(contract["_id"]),
+                                    "title": contract.get("title", "Untitled"),
+                                    "parties": contract.get("parties", []),
+                                    "status": contract.get("status", "Unknown"),
+                                    "platform": contract.get("plartform", "")  # Note the misspelling in the model
+                                }
+                                
+                                space_info["contracts"].append(contract_info)
+                        except Exception as contract_err:
+                            print(f"Error fetching contract {contract_id}: {str(contract_err)}")
+                    
+                    user_info["contract_spaces"].append(space_info)
+            except Exception as space_err:
+                print(f"Error fetching contract space {space_id}: {str(space_err)}")
+        
+        return user_info
+    
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        # Handle other exceptions
+        raise HTTPException(status_code=500, detail=f"Error retrieving user data: {str(e)}")
