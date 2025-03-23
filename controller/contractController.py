@@ -2,8 +2,10 @@ from fastapi import File, UploadFile, HTTPException, Request
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 import pdfplumber
+import shutil
 import os
 from dotenv import load_dotenv
+import asyncio
 import google.generativeai as genai
 from ..config.database import contract_spaces_collection, users_collection, contracts_collection  # Fixed variable names
 from ..models.Model import contractSpaceModel
@@ -52,6 +54,7 @@ def process_with_gemini(text):
         print(f"Gemini API error: {str(e)}")
         return f"Error processing with Gemini: {str(e)}"
 
+
 async def upload_contracts(file: UploadFile = File(...)):
     """
     Uploads a contract PDF file and processes it with Gemini
@@ -60,29 +63,42 @@ async def upload_contracts(file: UploadFile = File(...)):
     :return: Processed contract data
     """
     try:
-        with NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
-            temp_file.write(await file.read())  # Write file content
-            temp_path = temp_file.name  # Get the temporary file path
-            
-            # Extract text from PDF
-            extracted_text = extract_text_from_pdf(temp_path)
-            
-            # Process text with Gemini API
-           # gemini_response = process_with_gemini(extracted_text)
-            
-            # TODO: Parse response and store in database
-            # contract_data = json.loads(gemini_response)
-            # new_contract = await contracts_collection.insert_one(contract_data)
-            
-            # Clean up temp file
-            os.unlink(temp_path)
-            
-            print(extracted_text)
-          #  return {"gemini_response": gemini_response}
-            return {"gemini_response": "jsda"}
+        # Create a temporary file path
+        temp_file_path = UPLOAD_DIR / f"temp_{file.filename}"
+        
+        # Save the upload file to the temporary location
+        with open(temp_file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        # Make sure the file is closed before processing
+        file.file.close()
+        
+        # Extract text from PDF
+        extracted_text = extract_text_from_pdf(temp_file_path)
+        
+        # Process text with Gemini API
+        gemini_response = process_with_gemini(extracted_text)
+        
+        # TODO: Parse response and store in database
+        # contract_data = json.loads(gemini_response)
+        # new_contract = await contracts_collection.insert_one(contract_data)
+        
+        # Clean up temp file after processing
+        if os.path.exists(temp_file_path):
+            os.unlink(temp_file_path)
+        
+        print(extracted_text)
+        return {"gemini_response": gemini_response}
+        
     except Exception as e:
+        # Ensure file cleanup in case of error
+        if 'temp_file_path' in locals() and os.path.exists(temp_file_path):
+            try:
+                os.unlink(temp_file_path)
+            except:
+                pass  # Ignore errors during cleanup
         raise HTTPException(status_code=500, detail=str(e))
-
+    
 async def create_contract_space(details: contractSpaceModel, request: Request):
     """
     Creates a new contract space
