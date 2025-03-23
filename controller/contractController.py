@@ -68,7 +68,7 @@ async def upload_contracts(file: UploadFile = File(...)):
             extracted_text = extract_text_from_pdf(temp_path)
             
             # Process text with Gemini API
-            gemini_response = process_with_gemini(extracted_text)
+           # gemini_response = process_with_gemini(extracted_text)
             
             # TODO: Parse response and store in database
             # contract_data = json.loads(gemini_response)
@@ -77,7 +77,9 @@ async def upload_contracts(file: UploadFile = File(...)):
             # Clean up temp file
             os.unlink(temp_path)
             
-            return {"gemini_response": gemini_response}
+            print(extracted_text)
+          #  return {"gemini_response": gemini_response}
+            return {"gemini_response": "jsda"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -97,14 +99,14 @@ async def create_contract_space(details: contractSpaceModel, request: Request):
         
         # Create contract space
         contract_space_data = details.dict()
-        new_space = await contract_spaces_collection.insert_one(contract_space_data)  # Fixed variable name
+        new_space = contract_spaces_collection.insert_one(contract_space_data)# Fixed variable name
         new_space_id = str(new_space.inserted_id)
         
         # Update user document to include contract space ID
-        await users_collection.update_one(
-            {"_id": user["_id"]}, 
-            {"$push": {"contractSpace": new_space_id}}
-        )
+        users_collection.update_one(
+    {"_id": user["_id"]}, 
+    {"$push": {"contractSpace": new_space_id}}
+)
 
         return {"message": "Contract space created successfully", "contract_space_id": new_space_id}
     except HTTPException:

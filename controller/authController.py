@@ -91,7 +91,8 @@ async def user_signin(response: Response, user: LoginModel):
         # Store token in HTTP-only cookie
         response.set_cookie(key="access_token", value=access_token, httponly=True)
 
-        return {"message": "Login successful"}
+        return {"message": "Login successful",
+                "token":access_token}
     except HTTPException:
         # Re-raise HTTP exceptions
         raise
