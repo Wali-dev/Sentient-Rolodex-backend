@@ -197,8 +197,19 @@ async def get_contracts_by_space_id(space_id: str):
     :return: List of contracts
     """
     try:
+        print(f"Looking for space with ID: {space_id}")
+        
+        # Convert string ID to ObjectId for MongoDB query
+        try:
+            # Try to convert to ObjectId if it's in the correct format
+            space_obj_id = ObjectId(space_id)
+        except:
+            # If conversion fails, keep as string
+            space_obj_id = space_id
+            
         # Find the contract space
-        space = await contract_spaces_collection.find_one({"_id": space_id})
+        space = contract_spaces_collection.find_one({"_id": space_obj_id})
+        
         if not space:
             raise HTTPException(status_code=404, detail="Contract space not found")
             
@@ -207,13 +218,27 @@ async def get_contracts_by_space_id(space_id: str):
         contracts = []
         
         for contract_id in contract_ids:
-            contract = await contracts_collection.find_one({"_id": contract_id})
-            if contract:
-                contracts.append(contract)
+            try:
+                # Try to convert to ObjectId if it's in the correct format
+                contract_obj_id = ObjectId(contract_id) if not isinstance(contract_id, ObjectId) else contract_id
+                
+                # Find the contract
+                contract = contracts_collection.find_one({"_id": contract_obj_id})
+                if contract:
+                    # Convert ObjectId to string for JSON serialization
+                    contract["_id"] = str(contract["_id"])
+                    contracts.append(contract)
+            except Exception as contract_err:
+                print(f"Error fetching contract {contract_id}: {str(contract_err)}")
                 
         return {"message": "Contracts retrieved successfully", "contracts": contracts}
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
+        print(f"Error in get_contracts_by_space_id: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+    
 
 async def update_contract_space(space_id: str, details: dict):
     """
@@ -224,17 +249,38 @@ async def update_contract_space(space_id: str, details: dict):
     :return: Success message
     """
     try:
-        result = await contract_spaces_collection.update_one(
-            {"_id": space_id},
+        # Convert string ID to ObjectId for MongoDB query
+        from bson import ObjectId
+        try:
+            # Try to convert to ObjectId if it's in the correct format
+            space_obj_id = ObjectId(space_id)
+        except:
+            # If conversion fails, keep as string
+            space_obj_id = space_id
+            
+        print(f"Updating space with ID: {space_obj_id}")
+        print(f"Update details: {details}")
+        
+        # Remove await since contract_spaces_collection.update_one is synchronous
+        result = contract_spaces_collection.update_one(
+            {"_id": space_obj_id},
             {"$set": details}
         )
+        
+        print(f"Update result: {result.matched_count} document(s) matched, {result.modified_count} document(s) modified")
         
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Contract space not found")
             
         return {"message": "Contract space updated successfully"}
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
+        print(f"Error in update_contract_space: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+    
+
 
 async def update_contract_metadata(contract_id: str, metadata: dict):
     """
@@ -245,17 +291,32 @@ async def update_contract_metadata(contract_id: str, metadata: dict):
     :return: Success message
     """
     try:
-        result = await contracts_collection.update_one(
-            {"_id": contract_id},
+        # Convert string ID to ObjectId for MongoDB query
+        try:
+            contract_obj_id = ObjectId(contract_id)
+        except:
+            contract_obj_id = contract_id
+        
+        print(f"Updating contract with ID: {contract_obj_id}")
+        print(f"Update metadata: {metadata}")
+
+        result = contracts_collection.update_one(
+            {"_id": contract_obj_id},
             {"$set": metadata}
         )
         
+        print(f"Update result: {result.matched_count} document(s) matched, {result.modified_count} document(s) modified")
+
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Contract not found")
             
         return {"message": "Contract metadata updated successfully"}
+    except HTTPException:
+        raise
     except Exception as e:
+        print(f"Error in update_contract_metadata: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 async def delete_contract(contract_id: str):
     """
@@ -265,11 +326,24 @@ async def delete_contract(contract_id: str):
     :return: Success message
     """
     try:
-        result = await contracts_collection.delete_one({"_id": contract_id})
+       
+        
+        # Try to convert to ObjectId if it's a valid ID format
+        try:
+            obj_id = ObjectId(contract_id)
+        except:
+            # If conversion fails, use the string as is
+            obj_id = contract_id
+            
+        # Use the converted ID in the query
+        result = contracts_collection.delete_one({"_id": obj_id})
         
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Contract not found")
             
         return {"message": "Contract deleted successfully"}
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
